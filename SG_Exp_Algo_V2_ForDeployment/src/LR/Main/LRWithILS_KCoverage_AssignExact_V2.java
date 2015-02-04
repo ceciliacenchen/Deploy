@@ -1,11 +1,18 @@
 package LR.Main;
 import dataObjects.GlobalData;
 import datahandler.InputDBHandler;
+import dbHandler.ConnectDB;
 
 import java.io.File;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.sql.Timestamp;
+import java.text.SimpleDateFormat;
 import java.util.ArrayList;
+import java.util.Calendar;
 import java.util.Date;
+
+import com.mysql.jdbc.Connection;
 
 import utility.CollectionHandler;
 import utility.FileManager;
@@ -252,7 +259,7 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 		} while(continueRun);//end of main "for loop"	
 			
 		printProgress( dualObj,primalObj, primalBestObj,dualBestObj, time,data.getNoOfPatrons());
-		writeRes(new Date().getTime(),data.getNoOfTaskNodes(),data.getNoOfPatrons());
+		writeRes(data.getNoOfTaskNodes(),data.getNoOfPatrons());
 	}
 	
 	public static void printProgress(ArrayList<Double> dualObj,ArrayList<Double> primalObj,ArrayList<Double> primalBestObj,
@@ -289,14 +296,48 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 		System.out.println();
 	}
 	
-	public static void writeRes(long filename, int noofTask, int noofNopatrons) {
-		for(int k=0;k<noofNopatrons;k++) {
-			for(int i=0;i<noofTask;i++) {
-				if(bestAssignment[k][i]==1) {
-					System.out.println("User: "+InputDBHandler.uIndexToUId.get(k)+" -t:"+InputDBHandler.taskPosToTaskDatabase.get(i));
+	public static void writeRes(int noofTask, int noofNopatrons) {
+		Timestamp t = new java.sql.Timestamp(new Date().getTime());
+		Connection dbConnection=ConnectDB.connect(LoadProperties.properties);
+		Statement statement = null;
+		try {
+			statement = dbConnection.createStatement();
+			dbConnection.setAutoCommit(false);
+			for(int k=0;k<noofNopatrons;k++) {
+				for(int i=0;i<noofTask;i++) {
+					if(bestAssignment[k][i]==1) {
+						String uid=InputDBHandler.uIndexToUId.get(k);
+						int task=InputDBHandler.taskPosToTaskDatabase.get(i);
+						System.out.println("User: "+uid+" -t:"+task);
+						String insertTableSQL1 = "INSERT INTO recommendation"
+								+ "(User_id, task_id,tolerance, date_record) VALUES ( "
+								+ "(SELECT u.id from user u where u.androidId='"+ uid+"') ,"
+								+ "(SELECT u.tolerance from user u where u.androidId='"+ uid+"') ,"
+								+task+",'"+t+"');";
+						statement.addBatch(insertTableSQL1);	
+					}
+				}
+			}
+			statement.executeBatch();
+			dbConnection.commit();
+			System.out.println("Records are inserted into recomendation table.");
+		} catch (SQLException e) {
+			System.out.println(e.getMessage());
+		} finally {
+			if (statement != null) {
+				try {
+					statement.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
+				}
+			}
+			if (dbConnection != null) {
+				try {
+					dbConnection.close();
+				} catch (SQLException e) {
+					e.printStackTrace();
 				}
 			}
 		}
 	}
-
 }

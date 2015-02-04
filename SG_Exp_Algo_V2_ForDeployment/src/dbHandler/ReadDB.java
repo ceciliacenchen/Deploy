@@ -51,7 +51,7 @@ public class ReadDB {
 		HashMap<Integer,Double> taskPosToIncentive = new HashMap<Integer,Double>();
 		try {
 			Connection dbConnection=ConnectDB.connect(LoadProperties.properties);
-			String selectTableSQL = "SELECT taskId,location_id,incentive FROM thivyak.task where location_id "
+			String selectTableSQL = "SELECT taskId,location_id,incentive FROM task where location_id "
 					+ "in (select location_id from locationmapping);";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);
@@ -92,7 +92,7 @@ public class ReadDB {
 		double[][] distMatrix = new double[locations.size()][locations.size()];	
 		try {
 			Connection dbConnection=ConnectDB.connect(LoadProperties.properties);
-			String selectTableSQL = "SELECT * FROM thivyak.distance;";
+			String selectTableSQL = "SELECT * FROM distance;";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);
 			// execute select SQL stetement
@@ -121,7 +121,7 @@ public class ReadDB {
 		HashMap<Integer, Integer> list = new HashMap<Integer, Integer>();
 		try {
 			Connection dbConnection=ConnectDB.connect(LoadProperties.properties);
-			String selectTableSQL = "SELECT location_id FROM thivyak.locationmapping;";
+			String selectTableSQL = "SELECT location_id FROM locationmapping;";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);
 			// execute select SQL stetement
@@ -146,8 +146,8 @@ public class ReadDB {
 		Statement statement = null;
 		try {
 			Connection dbConnection=ConnectDB.connect(LoadProperties.properties);
-			String selectTableSQL="SELECT distinct u_id FROM thivyak.routeprediction " +
-					"where u_id in (select distinct u.androidId from thivyak.user u);";
+			String selectTableSQL="SELECT distinct u_id FROM routeprediction " +
+					"where u_id in (select distinct u.androidId from user u);";
 			
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);// execute select SQL stetement
@@ -163,9 +163,9 @@ public class ReadDB {
 			data.setNoOfPatrons(uIdToUIndex.keySet().size());
 			
 			selectTableSQL="SELECT u_id,route_id,probability, count(distinct sequence_id) as count " +
-					"FROM thivyak.routeprediction " +
-					"where date_time=(select max(date_time) from thivyak.routeprediction) "+
-					"and u_id in (select u.androidId from thivyak.user u) "+
+					"FROM routeprediction " +
+					"where date_time=(select max(date_time) from routeprediction) "+
+					"and u_id in (select u.androidId from user u) "+
 					"group by u_id,route_id;";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);
@@ -196,9 +196,9 @@ public class ReadDB {
 
 			//read routes
 			selectTableSQL = "SELECT u_id,location_id,sequence_id,route_id " +
-					"FROM thivyak.routeprediction " +
-					"where date_time=(select max(date_time) from thivyak.routeprediction) "+
-					"and u_id in (select u.androidId from thivyak.user u) "+
+					"FROM routeprediction " +
+					"where date_time=(select max(date_time) from routeprediction) "+
+					"and u_id in (select u.androidId from user u) "+
 					"order by u_id;";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);					
@@ -251,7 +251,7 @@ public class ReadDB {
 			Calendar cal = Calendar.getInstance();
 			SimpleDateFormat today = new SimpleDateFormat("yyyy-MM-dd");
 			Connection dbConnection=ConnectDB.connect(LoadProperties.properties);
-			String selectTableSQL = "SELECT count(date_updated) as count FROM thivyak.detour " +
+			String selectTableSQL = "SELECT count(date_updated) as count FROM detour " +
 					"where date_updated > '"+today+"' ;";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);
@@ -269,22 +269,22 @@ public class ReadDB {
 			if(flush) {
 				dbConnection.setAutoCommit(false);
 				statement = dbConnection.createStatement();
-				String query = "TRUNCATE TABLE thivyak.detour;";	
+				String query = "TRUNCATE TABLE detour;";	
 				statement.execute(query);
 				dbConnection.commit();
-				System.out.println("Truncate thivyak.detour table.");
+				System.out.println("Truncate detour table.");
 
-				query ="insert into thivyak.detour(u_id, remaining_detour, date_updated) " +
-						"SELECT androidId,tolerance,localtimestamp() FROM thivyak.user where androidId " +
-						"in (select distinct r.u_id FROM thivyak.routeprediction r);";
+				query ="insert into detour(u_id, remaining_detour, date_updated) " +
+						"SELECT androidId,tolerance,localtimestamp() FROM user where androidId " +
+						"in (select distinct r.u_id FROM routeprediction r);";
 				statement.execute(query);
 				dbConnection.commit();
-				System.out.println("Insert thivyak.detour table.");
+				System.out.println("Insert detour table.");
 			}
 			
 			//select the detour from the table
 			double[][] detourTime=new double[data.getNoOfPatrons()][data.getNoOfRoutesPerK()];
-			selectTableSQL = "SELECT u_id,remaining_detour FROM thivyak.detour;";
+			selectTableSQL = "SELECT u_id,remaining_detour FROM detour;";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);					
 			rs = statement.executeQuery(selectTableSQL);
