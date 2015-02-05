@@ -1,16 +1,7 @@
 package datahandler;
-
 import utility.CollectionHandler;
-import ilog.concert.IloException;
-
-import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.HashMap;
-import java.util.HashSet;
-
 import dataObjects.*;
-
-import utility.CollectionHandler;
 
 public class InputHandler {
 

@@ -6,14 +6,6 @@ package LR.Assignment;
 import utility.CollectionHandler;
 import utility.Commons;
 import utility.Methods;
-import ilog.concert.IloException;
-import ilog.concert.IloIntExpr;
-import ilog.concert.IloIntVar;
-import ilog.concert.IloNumExpr;
-import ilog.concert.IloNumVar;
-import ilog.concert.IloNumVarType;
-import ilog.cplex.IloCplex;
-
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
