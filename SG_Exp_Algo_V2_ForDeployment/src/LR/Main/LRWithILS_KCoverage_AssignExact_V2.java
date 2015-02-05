@@ -311,14 +311,14 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 						System.out.println("User: "+uid+" -t:"+task);
 						String insertTableSQL1 = "INSERT INTO recommendation"
 								+ "(User_id, task_id,tolerance, date_record) VALUES ( "
-								+ "(SELECT u.id from user u where u.androidId='"+ uid+"') ,"
-								+ "(SELECT u.tolerance from user u where u.androidId='"+ uid+"') ,"
-								+task+",'"+t+"');";
-						statement.addBatch(insertTableSQL1);	
+								+ "(SELECT u.id from user u where u.androidId='"+ uid+"'),"
+								+task+","+ "(SELECT u.tolerance from user u where u.androidId='"+ uid+"'), '"
+								+t+"');";
+						System.out.println(insertTableSQL1);
+						statement.execute(insertTableSQL1);
 					}
 				}
 			}
-			statement.executeBatch();
 			dbConnection.commit();
 			System.out.println("Records are inserted into recomendation table.");
 		} catch (SQLException e) {
