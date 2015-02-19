@@ -27,8 +27,8 @@ import LR.Assignment.*;
  *
  */
 public class LRWithILS_KCoverage_AssignExact_V2 {		
-	private static double[][][] priceVectorAll;//[i in taskNodesRange][k in patrons][m in routeRange]
-	private static int[][][] slaveValues;//i, k, 
+	private static ArrayList<ArrayList<ArrayList<Double>>> priceVectorAll;//[i in taskNodesRange][k in patrons][m in routeRange]
+	private static ArrayList<ArrayList<ArrayList<Integer>>> slaveValues;//i, k, 
 	private static int[][] bestAssignment; //[k][i]
 	
 	public static void main(String[] args) throws SQLException{
@@ -59,11 +59,17 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 		int noImprovementToStop=Integer.parseInt(LoadProperties.properties.get("noImprovementToStop").toString().trim());
 		
 		bestAssignment=null;
-		priceVectorAll=new double[data.getNoOfTaskNodes()][data.getNoOfPatrons()][data.getNoOfRoutesPerK()];
-		
+		priceVectorAll=new ArrayList<ArrayList<ArrayList<Double>>>();	
 		System.out.println("kCompletion:"+kCompletion+", noOfNodes:"+data.getNoOfNodes()+", noOfTaskNodes:"+ data.getNoOfTaskNodes());
     	ArrayList<Integer>  taskList = new ArrayList<Integer>(data.getTaskNodes().length);
         for (int i = 0; i < data.getTaskNodes().length; i++) {
+        	priceVectorAll.add(new ArrayList<ArrayList<Double>>());
+			for(int k=0; k<data.getNoOfPatrons();k++) {
+				priceVectorAll.get(i).add(new ArrayList<Double>());
+				for(int  m=0; m<data.getDetourTime().get(k).size();m++) {
+					priceVectorAll.get(i).get(k).add(0.0);
+				}
+        	}
         	taskList.add(data.getTaskNodes()[i]);
         }	
 		long startTime = System.currentTimeMillis();
@@ -89,7 +95,16 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 		double gap=0;
 		boolean continueRun=true;
 		do {
-			slaveValues=new int[data.getNoOfTaskNodes()][data.getNoOfPatrons()][data.getNoOfRoutesPerK()];
+			slaveValues=new ArrayList<ArrayList<ArrayList<Integer>>>();	
+	        for (int i = 0; i < data.getTaskNodes().length; i++) {
+	        	slaveValues.add(new ArrayList<ArrayList<Integer>>());
+				for(int k=0; k<data.getNoOfPatrons();k++) {
+					slaveValues.get(i).add(new ArrayList<Integer>());
+					for(int  m=0; m<data.getDetourTime().get(k).size();m++) {
+						slaveValues.get(i).get(k).add(0);
+					}
+	        	}
+	        }
 
 			dualObjV=0.0;
 			System.out.println();
@@ -100,7 +115,7 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 			 ************************************************************************/
 			AssignmentSlave_KCoverage_Exact_V2 a = new AssignmentSlave_KCoverage_Exact_V2();
 			double assingmentSlaveObjective=a.assignModel(data.getNoOfNodes(), data.getNoOfTaskNodes(),
-					data.getNoOfRoutesPerK(),data.getNoOfPatrons(),data.getTaskUtility(),
+					data.getNoOfPatrons(),data.getTaskUtility(),
 					data.getRouteProbability(), priceVectorAll,kCompletion);
 			if(assingmentSlaveObjective!=Double.MAX_VALUE) {
 				System.out.println("Assignment objective-exactV2: "+assingmentSlaveObjective);
@@ -108,13 +123,13 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 			}
 			
 			for(int k=0; k<data.getNoOfPatrons();k++) {
-				for(int  m=0; m<data.getNoOfRoutesPerK();m++) {
+				for(int  m=0; m<data.getDetourTime().get(k).size();m++) {
 					/************************************************************************
 					 * setup model for routing slaves: RoutingSlave
 					 ************************************************************************/
 					double[] priceVector= new double[data.getNoOfTaskNodes()];
 					for(int i=0; i<data.getNoOfTaskNodes();i++) {
-						priceVector[i]=priceVectorAll[i][k][m];
+						priceVector[i]=priceVectorAll.get(i).get(k).get(m);
 					}	
 
 					String heuristic=LoadProperties.properties.get("heuristic").toString().trim();
@@ -124,24 +139,24 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 						double routingSlaveObjective = rt.routing(data.getNoOfNodes(), 
 								data.getNoOfTaskNodes(),priceVector,
 								data.getWalkingTimes(),taskList,
-								data.getVisitingRoutineNodesSequence()[k][m].getPath(),
-								data.getDetourTime()[k][m],data.getTaskUtility(),k,m);
+								data.getVisitingRoutineNodesSequence().get(k).get(m).getPath(),
+								data.getDetourTime().get(k).get(m),data.getTaskUtility(),k,m);
 
 						dualObjV=dualObjV+routingSlaveObjective;
 						for(int i=0;i<data.getNoOfTaskNodes();i++) {  
-							slaveValues[i][k][m]=rt.value[i];
+							slaveValues.get(i).get(k).set(m, rt.value[i]);
 						}
 					} else if(heuristic.equalsIgnoreCase("Greedy")) {
 						Greedy rt= new Greedy();
 						double routingSlaveObjective = rt.routing(data.getNoOfNodes(), 
 								data.getNoOfTaskNodes(),priceVector,
 								data.getWalkingTimes(),taskList,
-								data.getVisitingRoutineNodesSequence()[k][m].getPath(),
-								data.getDetourTime()[k][m],data.getTaskUtility(),k,m);
+								data.getVisitingRoutineNodesSequence().get(k).get(m).getPath(),
+								data.getDetourTime().get(k).get(m),data.getTaskUtility(),k,m);
 
 						dualObjV=dualObjV+routingSlaveObjective;
 						for(int i=0;i<data.getNoOfTaskNodes();i++) {  
-							slaveValues[i][k][m]=rt.value[i];
+							slaveValues.get(i).get(k).set(m, rt.value[i]);
 						}	
 					}				
 				}   	        
@@ -151,8 +166,7 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 			 * setup model primal problem
 			 ************************************************************************/
 			PrimalMIP_KCoverage_Exact primal=new PrimalMIP_KCoverage_Exact();
-			primalObjective=primal.primalModel(data.getNoOfNodes(), data.getNoOfTaskNodes(),
-					data.getNoOfRoutesPerK(),data.getNoOfPatrons(),data.getTaskUtility(),
+			primalObjective=primal.primalModel(data.getNoOfNodes(), data.getNoOfTaskNodes(),data.getNoOfPatrons(),data.getTaskUtility(),
 					data.getRouteProbability(),slaveValues,kCompletion);
 			if(primalObjective!=Double.MAX_VALUE) {
 				System.out.println("Primal objective-exact: "+primalObjective);
@@ -205,13 +219,23 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 			 *Update lagrangian multipliers here
 			 ************************************************************************/
 			//obtain the best primal solution as the dual UB 
-			double[][][] deltas=new double[data.getNoOfTaskNodes()][data.getNoOfPatrons()][data.getNoOfRoutesPerK()];	
+			ArrayList<ArrayList<ArrayList<Double>>> deltas=new ArrayList<ArrayList<ArrayList<Double>>>();
+			for(int i=0; i<data.getNoOfTaskNodes();i++) {  	 
+				deltas.add(new ArrayList<ArrayList<Double>>());
+				for(int k=0; k<data.getNoOfPatrons();k++) {
+					deltas.get(i).add(new ArrayList<Double>());
+					for(int m=0; m<data.getDetourTime().get(k).size();m++) {
+						deltas.get(i).get(k).add(0.0);
+					}
+				}
+			}
 			double norm=0;
-			for(int k=0; k<data.getNoOfPatrons();k++) {
-				for(int m=0; m<data.getNoOfRoutesPerK();m++) {
-					for(int i=0; i<data.getNoOfTaskNodes();i++) {  
-						deltas[i][k][m]=a.nodeVisitedRes[i][k]-a.taskPenalizedRes[i][k][m]-slaveValues[i][k][m];
-						norm=norm+Math.pow(deltas[i][k][m],2);	 
+			for(int i=0; i<data.getNoOfTaskNodes();i++) {  
+				for(int k=0; k<data.getNoOfPatrons();k++) {
+					for(int m=0; m<data.getDetourTime().get(k).size();m++) {
+						double v=(double) a.nodeVisitedRes[i][k]-a.taskPenalizedRes.get(i).get(k).get(m)-slaveValues.get(i).get(k).get(m);
+						deltas.get(i).get(k).set(m,v);
+						norm=norm+Math.pow(deltas.get(i).get(k).get(m),2);	 
 					}
 				}
 			} 
@@ -221,12 +245,12 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 			System.out.println("Primal="+primalObj.get(t)+" Dual="+dualObj.get(t)); 
 			System.out.println("PrimalBest="+UB+" DualBest="+ dualBestObj.get(t)+ " Norm="+norm+" Scale="+scale+" Step="+step); 
 			for(int k=0; k<data.getNoOfPatrons();k++) {
-				for(int m=0; m<data.getNoOfRoutesPerK();m++) {
+				for(int m=0; m<data.getDetourTime().get(k).size();m++) {
 					for(int i=0; i<data.getNoOfTaskNodes();i++) {   	    	      	    	  	
 //						System.out.println("pricevector for (k,m,i)=("+k+","+m+","+i+") scale="+scale+" delta="+delta+" step="+step);			
-						priceVectorAll[i][k][m]=priceVectorAll[i][k][m]+ step*deltas[i][k][m];
-						if(priceVectorAll[i][k][m]<=0) {
-							priceVectorAll[i][k][m]=0;
+						priceVectorAll.get(i).get(k).set(m, priceVectorAll.get(i).get(k).get(m)+ step*deltas.get(i).get(k).get(m));
+						if(priceVectorAll.get(i).get(k).get(m)<=0) {
+							priceVectorAll.get(i).get(k).set(m,0.0);
 						}	 
 					}
 				}
@@ -309,13 +333,13 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 						String uid=InputDBHandler.uIndexToUId.get(k);
 						int task=InputDBHandler.taskPosToTaskDatabase.get(i);
 						System.out.println("User: "+uid+" -t:"+task);
-						String insertTableSQL1 = "INSERT INTO recommendation"
-								+ "(User_id, task_id,tolerance, date_record) VALUES ( "
-								+ "(SELECT u.id from user u where u.androidId='"+ uid+"'),"
-								+task+","+ "(SELECT u.tolerance from user u where u.androidId='"+ uid+"'), '"
-								+t+"');";
-						System.out.println(insertTableSQL1);
-						statement.execute(insertTableSQL1);
+//						String insertTableSQL1 = "INSERT INTO recommendation"
+//								+ "(User_id, task_id,tolerance, date_record) VALUES ( "
+//								+ "(SELECT u.id from user u where u.androidId='"+ uid+"'),"
+//								+task+","+ "(SELECT u.tolerance from user u where u.androidId='"+ uid+"'), '"
+//								+t+"');";
+//						System.out.println(insertTableSQL1);
+//						statement.execute(insertTableSQL1);
 					}
 				}
 			}

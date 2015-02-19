@@ -97,12 +97,11 @@ public class ReadDB {
 			System.out.println(selectTableSQL);
 			// execute select SQL stetement
 			ResultSet rs = statement.executeQuery(selectTableSQL);
-			
 			while (rs.next()) {
 				String node1 = rs.getString("node1").trim();
 				String node2 = rs.getString("node2").trim();
 				String dist = rs.getString("dist").trim();
-				//System.out.println("["+node1+" "+node2+"="+dist+"]");
+				System.out.println("["+node1+" "+node2+"="+dist+"]");
 				//location id to location index
 				int id1=locations.get(Integer.parseInt(node1));
 				int id2=locations.get(Integer.parseInt(node2));
@@ -121,14 +120,14 @@ public class ReadDB {
 		HashMap<Integer, Integer> list = new HashMap<Integer, Integer>();
 		try {
 			Connection dbConnection=ConnectDB.connect(LoadProperties.properties);
-			String selectTableSQL = "SELECT location_id FROM locationmapping;";
+			String selectTableSQL = "SELECT distinct section_id FROM locationmapping;";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);
 			// execute select SQL stetement
 			ResultSet rs = statement.executeQuery(selectTableSQL);
 			int index=0;
 			while (rs.next()) {
-				String node = rs.getString("location_id").trim();
+				String node = rs.getString("section_id").trim();
 				list.put(Integer.parseInt(node), index);
 				locationIndexToID.put(index, Integer.parseInt(node));
 				index++;
@@ -146,17 +145,22 @@ public class ReadDB {
 		Statement statement = null;
 		try {
 			Connection dbConnection=ConnectDB.connect(LoadProperties.properties);
-			String selectTableSQL="SELECT distinct u_id FROM routeprediction " +
-					"where u_id in (select distinct u.androidId from user u);";
+			String selectTableSQL="SELECT distinct u_id, count(distinct route_id) as count "
+					+ " FROM routeprediction " +
+					"where u_id in (select distinct u.androidId from user u)"
+					+ "group by u_id;";
 			
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);// execute select SQL stetement
 			ResultSet rs = statement.executeQuery(selectTableSQL);
 			int uindex=0;
+			HashMap<Integer, Integer> u_IndexToM=new HashMap<Integer, Integer>();
 			while (rs.next()) {
 				String u_id = rs.getString("u_id").trim();
+				int rcount = Integer.parseInt(rs.getString("count").trim());
 				uIdToUIndex.put(u_id, uindex);
 				uIndexToUId.put(uindex,u_id);
+				u_IndexToM.put(uindex, rcount);
 				uindex++;
 			}
 			statement.close();
@@ -169,8 +173,20 @@ public class ReadDB {
 					"group by u_id,route_id;";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);
-			double[][] routeProbability = new double[data.getNoOfPatrons()][data.getNoOfRoutesPerK()];
-			int[][] counts= new int[data.getNoOfPatrons()][data.getNoOfRoutesPerK()];
+			
+			ArrayList<ArrayList<Double>> routeProbability = new ArrayList<ArrayList<Double>>();
+			ArrayList<ArrayList<Integer>> counts = new ArrayList<ArrayList<Integer>>();
+			ArrayList<ArrayList<Route>> visitingRoutineNodesSequence= new ArrayList<ArrayList<Route>>();
+			for(int k=0;k<data.getNoOfPatrons();k++) {
+				routeProbability.add(new ArrayList<Double>());
+				counts.add(new ArrayList<Integer>());
+				visitingRoutineNodesSequence.add(new ArrayList<Route>());
+				for(int m=0;m<u_IndexToM.get(k);m++) {
+					routeProbability.get(k).add(0.0);
+					counts.get(k).add(0);
+					visitingRoutineNodesSequence.get(k).add(null);
+				}
+			}
 			rs = statement.executeQuery(selectTableSQL);
 			double[] sumProb=new double[data.getNoOfPatrons()];
 			while (rs.next()) {
@@ -181,13 +197,13 @@ public class ReadDB {
 				int uIndex=uIdToUIndex.get(u_id);
 //				System.out.println("u_id:"+u_id+" uIndex:"+uIndex+" route:"+route_id+" probability:"+probability+ " nCount:"+count);
 				
-				routeProbability[uIndex][Integer.parseInt(route_id)]=Double.parseDouble(probability);
-				counts[uIndex][Integer.parseInt(route_id)]=Integer.parseInt(count);
+				routeProbability.get(uIndex).set(Integer.parseInt(route_id), Double.parseDouble(probability));
+				counts.get(uIndex).set(Integer.parseInt(route_id), Integer.parseInt(count));
 				sumProb[uIndex]=sumProb[uIndex]+Double.parseDouble(probability);
 			}
-			for(int i=0;i<data.getNoOfPatrons();i++) {
-				for(int m=0;m<data.getNoOfRoutesPerK();m++) {
-					routeProbability[i][m]=Methods.round(routeProbability[i][m]/sumProb[i],4);
+			for(int k=0;k<data.getNoOfPatrons();k++) {
+				for(int m=0;m<u_IndexToM.get(k);m++) {
+					routeProbability.get(k).set(m, Methods.round(routeProbability.get(k).get(m)/sumProb[k],4));
 				}
 			}
 			
@@ -202,10 +218,9 @@ public class ReadDB {
 					"order by u_id;";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);					
-			Route[][] visitingRoutineNodesSequence= new Route[data.getNoOfPatrons()][data.getNoOfRoutesPerK()];
-			for(int i=0;i<data.getNoOfPatrons();i++) {
-				for(int j=0;j<data.getNoOfRoutesPerK();j++) {
-					visitingRoutineNodesSequence[i][j]=new Route(counts[i][j]);
+			for(int k=0;k<data.getNoOfPatrons();k++) {
+				for(int m=0;m<u_IndexToM.get(k);m++) {
+					visitingRoutineNodesSequence.get(k).set(m, new Route(counts.get(k).get(m)));
 				}	
 			}
 			rs = statement.executeQuery(selectTableSQL);
@@ -214,8 +229,7 @@ public class ReadDB {
 				String location_id = rs.getString("location_id").trim();
 				String sequence_id = rs.getString("sequence_id").trim();
 				String route_id = rs.getString("route_id").trim();
-				Route r= visitingRoutineNodesSequence[uIdToUIndex.get(u_id)]
-						[Integer.parseInt(route_id)];
+				Route r= visitingRoutineNodesSequence.get(uIdToUIndex.get(u_id)).get(Integer.parseInt(route_id));
 				//System.out.println("u:"+u_id+" r:"+route_id+" rsize:"+r.getPath().size()+" seq_id:"+sequence_id+" loc_id:"+location_id);
 				//map locationId into nodeIndex and store
 				r.getPath().set(Integer.parseInt(sequence_id),
@@ -223,8 +237,8 @@ public class ReadDB {
 			}
 			//Remove duplicates
 			for(int k=0;k<data.getNoOfPatrons();k++) {
-				for(int m=0;m<data.getNoOfRoutesPerK();m++) {
-					Route r= visitingRoutineNodesSequence[k][m];
+				for(int m=0;m<u_IndexToM.get(k);m++) {
+					Route r= visitingRoutineNodesSequence.get(k).get(m);
 					ArrayList<Integer> route= new ArrayList<Integer>();
 					route.add(r.getPath().get(0));
 					for(int i=1;i<r.getPath().size();i++) {
@@ -283,7 +297,13 @@ public class ReadDB {
 			}
 			
 			//select the detour from the table
-			double[][] detourTime=new double[data.getNoOfPatrons()][data.getNoOfRoutesPerK()];
+			ArrayList<ArrayList<Double>> detourTime=new ArrayList<ArrayList<Double>>();
+			for(int k=0;k<data.getNoOfPatrons();k++) {
+				detourTime.add(new ArrayList<Double>());
+				for(int m=0;m<data.getRouteProbability().get(k).size();m++) {
+					detourTime.get(k).add(0.0);
+				}	
+			}
 			selectTableSQL = "SELECT u_id,remaining_detour FROM detour;";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);					
@@ -291,8 +311,9 @@ public class ReadDB {
 			while (rs.next()) {
 				String u_id = rs.getString("u_id").trim();
 				String detour = rs.getString("remaining_detour").trim();
-				for(int i=0;i<data.getNoOfRoutesPerK();i++) {
-					detourTime[uIdToUIndex.get(u_id)][i]=Double.parseDouble(detour);
+				int uindex=uIdToUIndex.get(u_id);
+				for(int m=0;m<data.getRouteProbability().get(uindex).size();m++) {
+					detourTime.get(uindex).set(m, Double.parseDouble(detour));
 				}
 			}
 			data.setDetourTime(detourTime);

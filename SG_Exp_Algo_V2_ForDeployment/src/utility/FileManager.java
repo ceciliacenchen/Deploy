@@ -3,8 +3,6 @@
  * and open the template in the editor.
  */
 package utility;
-
-import datahandler.InputHandler;
 import datahandler.InputReader;
 
 import java.io.BufferedWriter;

@@ -3,6 +3,7 @@
  */
 package LR.Assignment;
 import datahandler.*;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
@@ -30,12 +31,10 @@ public class PrimalMIP_KCoverage_Exact {
 	 * @param priceVector
 	 */
 	// int[][][] slaveValues;//i, k, m
-	public static double primalModel(int noOfNodes, int noOfTaskNodes,
-			int noOfRoutesPerK, int noOfPatrons,
-			double[] taskUtility, double[][] routeProbability,
-			int[][][] slaveValuesIKM, int kCompletion) {
+	public static double primalModel(int noOfNodes, int noOfTaskNodes, int noOfPatrons,
+			double[] taskUtility, ArrayList<ArrayList<Double>> routeProbability,
+			ArrayList<ArrayList<ArrayList<Integer>>> slaveValuesIKM, int kCompletion) {
 		long startTime = System.nanoTime();
-
 		double totalVal = 0;
 		currentAssignment = new int[noOfPatrons][noOfTaskNodes];
 		for (int i = 0; i < noOfTaskNodes; i++) {
@@ -44,9 +43,9 @@ public class PrimalMIP_KCoverage_Exact {
 			boolean checkAssign = false;
 			for (int k = 0; k < noOfPatrons; k++) {
 				double vForK = 0;
-				for (int m = 0; m < noOfRoutesPerK; m++) {
-					vForK = vForK +  routeProbability[k][m]*slaveValuesIKM[i][k][m];
-					if(checkAssign==false && slaveValuesIKM[i][k][m]>0) {
+				for (int m = 0; m < routeProbability.get(k).size(); m++) {
+					vForK = vForK +  routeProbability.get(k).get(m)*slaveValuesIKM.get(i).get(k).get(m);
+					if(checkAssign==false && slaveValuesIKM.get(i).get(k).get(m)>0) {
 						checkAssign = true;
 					}
 				}
@@ -63,8 +62,8 @@ public class PrimalMIP_KCoverage_Exact {
 				double innerV = 0;
 				for (int s = agentValues.length-kCompletion; s <agentValues.length; s++) {
 					currentAssignment[agentId[s]][i] = 1;
-					for (int m = 0; m < noOfRoutesPerK; m++) {
-						innerV = innerV + routeProbability[agentId[s]][m]* (1-slaveValuesIKM[i][agentId[s]][m]);
+					for (int m = 0; m < routeProbability.get(agentId[s]).size(); m++) {
+						innerV = innerV + routeProbability.get(agentId[s]).get(m)* (1-slaveValuesIKM.get(i).get(agentId[s]).get(m));
 					}
 				}
 				innerV=innerV /(kCompletion * 1.0);

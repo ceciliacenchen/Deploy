@@ -1,5 +1,6 @@
 package datahandler;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
@@ -25,7 +26,6 @@ public class InputDBHandler {
 	public static HashMap<Integer, String> uIndexToUId= new HashMap<Integer, String> (); //userIndex to userId in the datebase
 	
 	public static void readInstance() {
-		data.setNoOfRoutesPerK(Integer.parseInt(LoadProperties.properties.get("noOfRoutesPerK").toString().trim()));
 		//set instance id
 		Date d= new Date();
 		data.setInstanceID(d.getTime()+"");
@@ -51,7 +51,6 @@ public class InputDBHandler {
 		
 		if (debug) {
 			System.out.println("numAgents: " + data.getNoOfPatrons());
-			System.out.println("noOfRoutesPerK: " + data.getNoOfRoutesPerK());
 			System.out.println("numOfNodes: " + data.getNoOfNodes());
 			System.out.println();
 			System.out.println("numOfTask: " + data.getNoOfTaskNodes());
@@ -63,23 +62,23 @@ public class InputDBHandler {
 			CollectionHandler.printArrays(data.getTaskUtility());
 			System.out.println();
 			System.out.println("routeProbability: ");
-			for(double[] s:data.getRouteProbability()) {
-				System.out.println(Arrays.toString(s));
+			for(ArrayList<Double> s:data.getRouteProbability()) {
+				System.out.println(s);
 			}
 			System.out.println("visitingRoutineNodesSequence: ");
-			for(Route[] s:data.getVisitingRoutineNodesSequence()) {
+			for(ArrayList<Route> s:data.getVisitingRoutineNodesSequence()) {
 				for(Route r:s) {
 					System.out.println(r.getPath());
 				}
 			}
 			System.out.println("detourTime: ");
-			for(double[] s:data.getDetourTime()) {
-				System.out.println(Arrays.toString(s));
+			for(ArrayList<Double> s:data.getDetourTime()) {
+				System.out.println(s);
 			}
-			System.out.println("Distance matrix");
-			for(double[] s:data.getWalkingTimes()) {
-				System.out.println(Arrays.toString(s));
-			}
+//			System.out.println("Distance matrix");
+//			for(double[] s:data.getWalkingTimes()) {
+//				System.out.println(Arrays.toString(s));
+//			}
 		}
 	}
 }
