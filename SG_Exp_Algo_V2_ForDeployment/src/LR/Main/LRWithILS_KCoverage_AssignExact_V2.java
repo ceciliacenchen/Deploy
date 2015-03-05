@@ -31,7 +31,7 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 	private static ArrayList<ArrayList<ArrayList<Integer>>> slaveValues;//i, k, 
 	private static int[][] bestAssignment; //[k][i]
 	
-	public static void main(String[] args) throws SQLException{
+	public static void main2(String[] args) throws SQLException{
 		LoadProperties.load();
 		
 		ArrayList<String> dirs = new ArrayList<String>();
@@ -51,7 +51,8 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 		return data;
 	}
 
-	private static void mainFlow(GlobalData data) {  
+	private static void mainFlow(GlobalData data) {
+		double serviceTime =Double.parseDouble(LoadProperties.properties.get("servicetime").toString().trim());
 		double scale =Double.parseDouble(LoadProperties.properties.get("scale").toString().trim());
 		int iterationToHalving=Integer.parseInt(LoadProperties.properties.get("iterationToHalving").toString().trim());
 		int kCompletion=Integer.parseInt(LoadProperties.properties.get("kCompletion").toString().trim());
@@ -140,7 +141,7 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 								data.getNoOfTaskNodes(),priceVector,
 								data.getWalkingTimes(),taskList,
 								data.getVisitingRoutineNodesSequence().get(k).get(m).getPath(),
-								data.getDetourTime().get(k).get(m),data.getTaskUtility(),k,m);
+								data.getDetourTime().get(k).get(m),data.getTaskUtility(),k,m,serviceTime);
 
 						dualObjV=dualObjV+routingSlaveObjective;
 						for(int i=0;i<data.getNoOfTaskNodes();i++) {  
@@ -152,7 +153,7 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 								data.getNoOfTaskNodes(),priceVector,
 								data.getWalkingTimes(),taskList,
 								data.getVisitingRoutineNodesSequence().get(k).get(m).getPath(),
-								data.getDetourTime().get(k).get(m),data.getTaskUtility(),k,m);
+								data.getDetourTime().get(k).get(m),data.getTaskUtility(),k,m,serviceTime);
 
 						dualObjV=dualObjV+routingSlaveObjective;
 						for(int i=0;i<data.getNoOfTaskNodes();i++) {  
@@ -243,7 +244,7 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 			double step = scale*((UB-dualObjV) / norm);  
 
 			System.out.println("Primal="+primalObj.get(t)+" Dual="+dualObj.get(t)); 
-			System.out.println("PrimalBest="+UB+" DualBest="+ dualBestObj.get(t)+ " Norm="+norm+" Scale="+scale+" Step="+step); 
+			System.out.println("PrimalBest=" + UB + " DualBest=" + dualBestObj.get(t) + " Norm=" + norm + " Scale=" + scale+" Step="+step);
 			for(int k=0; k<data.getNoOfPatrons();k++) {
 				for(int m=0; m<data.getDetourTime().get(k).size();m++) {
 					for(int i=0; i<data.getNoOfTaskNodes();i++) {   	    	      	    	  	
@@ -333,13 +334,16 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 						String uid=InputDBHandler.uIndexToUId.get(k);
 						int task=InputDBHandler.taskPosToTaskDatabase.get(i);
 						System.out.println("User: "+uid+" -t:"+task);
-//						String insertTableSQL1 = "INSERT INTO recommendation"
-//								+ "(User_id, task_id,tolerance, date_record) VALUES ( "
-//								+ "(SELECT u.id from user u where u.androidId='"+ uid+"'),"
-//								+task+","+ "(SELECT u.tolerance from user u where u.androidId='"+ uid+"'), '"
-//								+t+"');";
-//						System.out.println(insertTableSQL1);
-//						statement.execute(insertTableSQL1);
+						String truncateTableSQL1 ="truncate table recommendation;";
+						statement.execute(truncateTableSQL1);
+						System.out.println(truncateTableSQL1);
+						String insertTableSQL1 = "INSERT INTO recommendation"
+								+ "(User_id, task_id,tolerance, date_record) VALUES ( "
+								+ "(SELECT userId from user_info u where u.androidId='"+ uid+"'),"
+								+task+","+ "(SELECT u.tolerance from user_info u where u.androidId='"+ uid+"'), '"
+								+t+"');";
+						System.out.println(insertTableSQL1);
+						statement.execute(insertTableSQL1);
 					}
 				}
 			}

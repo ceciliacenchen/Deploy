@@ -14,6 +14,7 @@ import java.sql.SQLException;
 
 import com.mysql.jdbc.Connection;
 
+import org.joda.time.DateTime;
 import dataObjects.GlobalData;
 import dataObjects.Route;
 import edu.uci.ics.jung.graph.UndirectedSparseGraph;
@@ -50,9 +51,16 @@ public class ReadDB {
 		HashMap<Integer, Integer> list = new HashMap<Integer, Integer>();
 		HashMap<Integer,Double> taskPosToIncentive = new HashMap<Integer,Double>();
 		try {
+			DateTime curTime = new DateTime();
+			String hour ="9";
+			if(Integer.parseInt(curTime.hourOfDay().getAsText()) < 9)
+				hour = "9";
+			else if (Integer.parseInt(curTime.hourOfDay().getAsText()) < 12)
+				hour = "12";
+			else hour = "15";
 			Connection dbConnection=ConnectDB.connect(LoadProperties.properties);
-			String selectTableSQL = "SELECT taskId,location_id,incentive FROM task where location_id "
-					+ "in (select location_id from locationmapping);";
+			String selectTableSQL = "SELECT taskId,location_id,incentive,HOUR(timeFrom) as h FROM task where location_id "
+					+ "in (select location_id from locationmapping) and HOUR(timeFrom)="+hour+";";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);
 			// execute select SQL stetement
@@ -62,7 +70,8 @@ public class ReadDB {
 				String taskId = rs.getString("taskId").trim();
 				String locationId = rs.getString("location_id").trim();
 				String utility = rs.getString("incentive").trim();
-				taskPosToTaskDatabase.put(i,Integer.parseInt(taskId));
+				//System.out.println(rs.getString("h").trim());
+				taskPosToTaskDatabase.put(i, Integer.parseInt(taskId));
 				taskPosToLocationId.put(i, Integer.parseInt(locationId));
 				taskPosToIncentive.put(i, Double.parseDouble(utility));
 				i++;
@@ -85,6 +94,25 @@ public class ReadDB {
 		} catch (SQLException e) {
 			e.printStackTrace();
 		}
+	}
+
+	public static void resetDb(){
+		Statement statement = null;
+		try {
+			Connection dbConnection = ConnectDB.connect(LoadProperties.properties);
+			statement =dbConnection.createStatement();
+			String updateTableSQL = "UPDATE user_info set isfirsttime=1 ; ";
+			statement.execute(updateTableSQL);
+			updateTableSQL = "UPDATE user_info set completedtasks=0";
+			statement.execute(updateTableSQL);
+			//ResultSet rs = statement.executeQuery(updateTableSQL);
+			statement.close();
+			dbConnection.close();
+		}
+		catch(SQLException e){
+			e.printStackTrace();
+		}
+
 	}
 	
 	public static void readDisMatrix(HashMap<Integer, Integer> locations,GlobalData data){
@@ -147,7 +175,7 @@ public class ReadDB {
 			Connection dbConnection=ConnectDB.connect(LoadProperties.properties);
 			String selectTableSQL="SELECT distinct u_id, count(distinct route_id) as count "
 					+ " FROM routeprediction " +
-					"where u_id in (select distinct u.androidId from user u)"
+					"where u_id in (select distinct u.androidId from user_info u)"
 					+ "group by u_id;";
 			
 			statement =dbConnection.createStatement();
@@ -169,7 +197,7 @@ public class ReadDB {
 			selectTableSQL="SELECT u_id,route_id,probability, count(distinct sequence_id) as count " +
 					"FROM routeprediction " +
 					"where date_time=(select max(date_time) from routeprediction) "+
-					"and u_id in (select u.androidId from user u) "+
+					"and u_id in (select u.androidId from user_info u) "+
 					"group by u_id,route_id;";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);
@@ -214,7 +242,7 @@ public class ReadDB {
 			selectTableSQL = "SELECT u_id,location_id,sequence_id,route_id " +
 					"FROM routeprediction " +
 					"where date_time=(select max(date_time) from routeprediction) "+
-					"and u_id in (select u.androidId from user u) "+
+					"and u_id in (select u.androidId from user_info u) "+
 					"order by u_id;";
 			statement =dbConnection.createStatement();
 			System.out.println(selectTableSQL);					

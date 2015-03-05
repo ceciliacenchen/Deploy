@@ -19,16 +19,15 @@ public class PrimalMIP_KCoverage_Exact {
 	public static int[][] currentAssignment;
 
 	/**
-	 * @param cplex
+
 	 * @param noOfNodes
 	 * @param noOfTaskNodes
-	 * @param noOfRoutineNode
-	 * @param noOfRoutesPerK
+
 	 * @param noOfPatrons
-	 * @param taskNodes
+
 	 * @param taskUtility
 	 * @param routeProbability
-	 * @param priceVector
+
 	 */
 	// int[][][] slaveValues;//i, k, m
 	public static double primalModel(int noOfNodes, int noOfTaskNodes, int noOfPatrons,

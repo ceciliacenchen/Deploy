@@ -25,7 +25,7 @@ public class ILS {
 		super();
 	}
 	public double routing(int noOfNodes,int noOfTaskNodes, double[] priceVector,double[][] walkingTimes,
-			ArrayList<Integer> taskList,ArrayList<Integer> visitingRoutineNodesSequence, double detourTime,double[] taskUtility, int k,int m)  {
+			ArrayList<Integer> taskList,ArrayList<Integer> visitingRoutineNodesSequence, double detourTime,double[] taskUtility, int k,int m,double serviceTime)  {
 		long startTime = System.nanoTime();
 		
 		ArrayList<Integer> deep=CollectionHandler.deepCopyArrayList(visitingRoutineNodesSequence);
@@ -40,7 +40,7 @@ public class ILS {
 
 		boolean notExist=true;
 		do {
-			notExist=greedy(detourTime,priceVector, walkingTimes, taskList,taskUtility);
+			notExist=greedy(detourTime,priceVector, walkingTimes, taskList,taskUtility, serviceTime);
 //			System.out.println(getTotalT(taskList,r, walkingTimes,readFormat)+""+r);
 		} while(notExist);
 	
@@ -55,12 +55,12 @@ public class ILS {
 				countchanged++;
 //				System.out.println("exchanged:"+getTotalT(taskList,r, walkingTimes,readFormat)+""+r);
 			} 
-			if( replace( detourTime,priceVector, walkingTimes, taskList,taskUtility)){
+			if( replace( detourTime,priceVector, walkingTimes, taskList,taskUtility,serviceTime)){
 				countchanged++;
 //				System.out.println("replaced:"+getTotalT(taskList,r, walkingTimes,readFormat)+""+r);
 			}
 			
-			if(greedy( detourTime,priceVector, walkingTimes, taskList,taskUtility)) {
+			if(greedy( detourTime,priceVector, walkingTimes, taskList,taskUtility,serviceTime)) {
 				countchanged++;
 //				System.out.println("added:"+getTotalT(taskList,r, walkingTimes,readFormat)+""+r);
 			}
@@ -135,7 +135,7 @@ public class ILS {
 	}
 	
 	private boolean replace(double detourTime,double[] price, 
-			double[][] walkingTimes, ArrayList<Integer> taskList, double[] taskUtility) {
+			double[][] walkingTimes, ArrayList<Integer> taskList, double[] taskUtility,double serviceTime) {
 		boolean routechanged=false;
 		int besti=-1;
 		int bestj=-1;
@@ -145,14 +145,14 @@ public class ILS {
 		for(int i=0;i<r.size();i++ ) {
 			int pos=taskList.indexOf(r.get(i));
 			if(pos!=-1) {
-				double tDifferece=getTDiff(r.get(i), taskList, i,r, walkingTimes);
+				double tDifferece=getTDiff(r.get(i), taskList, i,r, walkingTimes,serviceTime);
 				double baseT=baseBaforeT-tDifferece;
 				double currentTMarginal=price[pos] * price[pos] / tDifferece;
 				
 				for(int j=0;j<taskList.size();j++ ) {
 					//if route r does not contain task j
 					if(!r.contains(taskList.get(j))) {						
-						double tDifferenceReplacde=getTDiff(taskList.get(j), taskList,i, r,walkingTimes);						
+						double tDifferenceReplacde=getTDiff(taskList.get(j), taskList,i, r,walkingTimes,serviceTime);
 						if(tDifferenceReplacde+baseT<=detourTime) {
 							double tempMarginal=price[j]*taskUtility[j] / tDifferenceReplacde;
 							if (tempMarginal >= currentTMarginal) {
@@ -176,7 +176,7 @@ public class ILS {
 	}
 	
 	private double getTDiff(int node, ArrayList<Integer>taskList,int i,ArrayList<Integer> route,
-			double[][] walkingTimes) {
+			double[][] walkingTimes,double serviceTime) {
 		double dist=0;		
 		int taskNodeIndex=(taskList.contains(node))? 
 				InputDBHandler.locationIdToDistIndex.get(InputDBHandler.taskPosToLocationId.get(InputDBHandler.taskIdToTaskPos.get(node))):node;
@@ -187,14 +187,14 @@ public class ILS {
 				InputDBHandler.locationIdToDistIndex.get(InputDBHandler.taskPosToLocationId.get(InputDBHandler.taskIdToTaskPos.get(route.get(i+1)))):
 			route.get(i+1);
 		dist=walkingTimes[node1][taskNodeIndex]+walkingTimes[taskNodeIndex][node2]
-				-walkingTimes[node1][node2];
+				-walkingTimes[node1][node2]+serviceTime;
 		return dist;
 	}
 
 	
 	
 	private boolean greedy(double detourTime,double[] price, 
-			double[][] walkingTimes, ArrayList<Integer> taskList,double[] taskUtility) {  
+			double[][] walkingTimes, ArrayList<Integer> taskList,double[] taskUtility,double serviceTime) {
 		boolean notExit=true;
 		double t=getTotalT(taskList,r, walkingTimes);
 		
@@ -216,7 +216,7 @@ public class ILS {
 //						r.get(p);
 //					dist=walkingTimes[node1][taskNodeIndex]+walkingTimes[taskNodeIndex][node2]
 //							-walkingTimes[node1][node2];
-					dist=getTDiff(task,taskList,p-1,r, walkingTimes);
+					dist=getTDiff(task,taskList,p-1,r, walkingTimes,serviceTime);
 				
 					double detourIncurred=dist+t;
 					if(dist+t<=detourTime) {

@@ -27,13 +27,12 @@ public class AssignmentSlave_KCoverage_Exact_V2 {
 	}
 
 	/**
-	 * @param cplex
+
 	 * @param noOfNodes
 	 * @param noOfTaskNodes
-	 * @param noOfRoutineNode
-	 * @param noOfRoutesPerK
+
 	 * @param noOfPatrons
-	 * @param taskNodes
+
 	 * @param taskUtility
 	 * @param routeProbability
 	 * @param priceVector

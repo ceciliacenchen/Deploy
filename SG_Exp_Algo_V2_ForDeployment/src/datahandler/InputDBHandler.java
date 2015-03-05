@@ -29,7 +29,7 @@ public class InputDBHandler {
 		//set instance id
 		Date d= new Date();
 		data.setInstanceID(d.getTime()+"");
-		
+		ReadDB.resetDb();
 		//read locations 
 		//locationId in the database to location id in the program
 		locationIdToDistIndex =ReadDB.readLocations(distIndexToLocationID);  
