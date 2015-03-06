@@ -31,7 +31,7 @@ public class LRWithILS_KCoverage_AssignExact_V2 {
 	private static ArrayList<ArrayList<ArrayList<Integer>>> slaveValues;//i, k, 
 	private static int[][] bestAssignment; //[k][i]
 	
-	public static void main2(String[] args) throws SQLException{
+	public static void main(String[] args) throws SQLException{
 		LoadProperties.load();
 		
 		ArrayList<String> dirs = new ArrayList<String>();
