@@ -8,6 +8,7 @@ import java.util.Arrays;
 
 import datahandler.InputDBHandler;
 import utility.CollectionHandler;
+import utility.LoadProperties;
 
 /**
  * @author cenchen.2012
@@ -24,7 +25,7 @@ public class Greedy {
 		super();
 	}
 	public double routing(int noOfNodes,int noOfTaskNodes, double[] priceVector,double[][] walkingTimes,
-			ArrayList<Integer> taskList,ArrayList<Integer> visitingRoutineNodesSequence, double detourTime,double[] taskUtility, int k,int m)  {
+			ArrayList<Integer> taskList,ArrayList<Integer> visitingRoutineNodesSequence, double detourTime,double[] taskUtility, int k,int m,double serviceTime)  {
 		long startTime = System.nanoTime();
 		ArrayList<Integer> deep=CollectionHandler.deepCopyArrayList(visitingRoutineNodesSequence);
 		
@@ -38,7 +39,7 @@ public class Greedy {
 
 		boolean notExist=true;
 		do {
-			notExist=greedy(detourTime,priceVector, walkingTimes, taskList,taskUtility);
+			notExist=greedy(detourTime,priceVector, walkingTimes, taskList,taskUtility,serviceTime);
 		} while(notExist);
 		
 		/*
@@ -66,10 +67,10 @@ public class Greedy {
 	}
 	
 	private boolean greedy(double detourTime,double[] price, 
-			double[][] walkingTimes, ArrayList<Integer> taskList,double[] taskUtility) {  
+			double[][] walkingTimes, ArrayList<Integer> taskList,double[] taskUtility,double serviceTime) {
 		boolean notExit=true;
 		double t=getTotalT(taskList,r, walkingTimes);
-		
+
 		int bestTask=-1;
 		int bestPos=-1;
 		double bestMarginalUtility=0;
@@ -79,6 +80,7 @@ public class Greedy {
 			if(!r.contains(task)) {
 				for(int p=1;p<r.size();p++) {
 					double dist=0;
+
 					int taskNodeIndex=InputDBHandler.locationIdToDistIndex.get(InputDBHandler.taskPosToLocationId.get(i));
 					int node1=(taskList.contains(r.get(p-1)))? 
 						InputDBHandler.locationIdToDistIndex.get(InputDBHandler.taskPosToLocationId.get(InputDBHandler.taskIdToTaskPos.get(r.get(p-1)))):
@@ -87,7 +89,7 @@ public class Greedy {
 							InputDBHandler.locationIdToDistIndex.get(InputDBHandler.taskPosToLocationId.get(InputDBHandler.taskIdToTaskPos.get(r.get(p)))):
 						r.get(p);
 					dist=walkingTimes[node1][taskNodeIndex]+walkingTimes[taskNodeIndex][node2]
-							-walkingTimes[node1][node2];
+							-walkingTimes[node1][node2]+serviceTime;
 					
 					double detourIncurred=dist+t;
 					if(dist+t<=detourTime) {

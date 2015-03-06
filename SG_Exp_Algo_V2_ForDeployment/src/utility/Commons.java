@@ -51,13 +51,13 @@ public class Commons {
 		 return -1;
 	 }
 	 
-	 public static int[] convertArrayListToArray(ArrayList<Integer> list) {
-	     int[] array = new int[list.size()];
-	     for(int i=0;i<list.size();i++) {
-	    	 array[i]=list.get(i);
-	     }
-		 return array;
-	 }
+//	 public static int[] convertArrayListToArray(ArrayList<Integer> list) {
+//	     int[] array = new int[list.size()];
+//	     for(int i=0;i<list.size();i++) {
+//	    	 array[i]=list.get(i);
+//	     }
+//		 return array;
+//	 }
 
 	public static double[] convertArrayListToArray(ArrayList<Double> list) {
 		double[] array = new double[list.size()];
